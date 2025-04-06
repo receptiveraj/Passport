@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passport Photo Print</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #upload-container {
+            width: 300px;
+            height: 150px;
+            border: 2px dashed #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+        #photo-options {
+            margin: 20px auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .photo-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .photo-option img {
+            width: 50px;
+            height: 60px;
+            object-fit: cover;
+            border: 1px solid black;
+            margin-bottom: 5px;
+        }
+        .remove-btn {
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 3px 6px;
+            font-size: 12px;
+        }
+        #photo-sheet {
+            width: 210mm; /* A4 width */
+            height: 297mm; /* A4 height */
+            background: white;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(6, 35mm); /* 6 photos per row */
+            grid-auto-rows: 45mm; /* Row-wise alignment */
+            gap: 2mm; /* Small space between columns */
+            padding: 10mm;
+            align-content: start;
+        }
+        .photo {
+            width: 35mm;
+            height: 45mm;
+            object-fit: cover;
+            border: 0.5mm solid black;
+        }
+        #print-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #photo-sheet, #photo-sheet * {
+                visibility: visible;
+            }
+            #photo-sheet {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Passport Photo Print</h1>
+
+    <label for="file-input">
+        <div id="upload-container">
+            Drag & Drop or Click to Upload
+        </div>
+    </label>
+    <input type="file" id="file-input" accept="image/*" multiple style="display: none">
+
+    <div id="photo-options"></div>
+
+    <button id="generate-sheet">Generate Sheet</button>
+    
+    <div id="photo-sheet"></div>
+
+    <button id="print-button" onclick="window.print()">Print</button>
+
+    <script>
+        const uploadContainer = document.getElementById('upload-container');
+        const fileInput = document.getElementById('file-input');
+        const photoOptions = document.getElementById('photo-options');
+        const photoSheet = document.getElementById('photo-sheet');
+        const generateSheetButton = document.getElementById('generate-sheet');
+
+        let selectedPhotos = [];
+
+        uploadContainer.addEventListener('click', () => fileInput.click());
+
+        uploadContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadContainer.style.borderColor = "blue";
+        });
+
+        uploadContainer.addEventListener('dragleave', () => {
+            uploadContainer.style.borderColor = "#333";
+        });
+
+        uploadContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadContainer.style.borderColor = "#333";
+            const files = Array.from(e.dataTransfer.files);
+            processImages(files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            processImages(files);
+        });
+
+        function processImages(files) {
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        addPhotoOption(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        function addPhotoOption(imageSrc) {
+            const photoObj = { src: imageSrc, quantity: 1 };
+            selectedPhotos.push(photoObj);
+
+            const photoContainer = document.createElement('div');
+            photoContainer.classList.add('photo-option');
+
+            const img = document.createElement('img');
+            img.src = imageSrc;
+
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'number';
+            quantityInput.min = 1;
+            quantityInput.value = 1;
+            quantityInput.style.width = '40px';
+            quantityInput.addEventListener('change', (e) => {
+                photoObj.quantity = parseInt(e.target.value);
+            });
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.classList.add('remove-btn');
+            removeBtn.addEventListener('click', () => {
+                selectedPhotos = selectedPhotos.filter(p => p !== photoObj);
+                photoOptions.removeChild(photoContainer);
+            });
+
+            photoContainer.appendChild(img);
+            photoContainer.appendChild(quantityInput);
+            photoContainer.appendChild(removeBtn);
+            photoOptions.appendChild(photoContainer);
+        }
+
+        generateSheetButton.addEventListener('click', () => {
+            photoSheet.innerHTML = ''; // Clear previous images
+            selectedPhotos.forEach(photo => {
+                for (let i = 0; i < photo.quantity; i++) {
+                    const img = document.createElement('img');
+                    img.src = photo.src;
+                    img.classList.add('photo');
+                    photoSheet.appendChild(img);
+                }
+            });
+        });
+
+    </script>
+
+</body>
+</html>
